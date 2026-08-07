@@ -4,31 +4,58 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Adam &amp; Erika</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Playfair+Display:wght@700&family=Poppins:wght@500;600&family=Montserrat:wght@600&family=Cormorant+Garamond:wght@600&display=swap">
 <style>
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
   html, body {
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden;
+    overflow: hidden;   /* guarantees no scrollbars, ever */
+  }
+  body {
+    position: relative;
+    background-image: url("/photo/current.jpg");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    width: 100vw;
+    /* 100dvh accounts for mobile browser address bars so the photo
+       still fills the true visible screen with no gap or scroll */
+    height: 100dvh;
+  }
+  .caption-box {
+    position: absolute;
+    left: 60.0%;
+    top: 24.0%;
+    width: 28.0%;
+    height: 16.0%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #f6d5c9, #f0b6c2);
-    font-family: Georgia, serif;
-  }
-  body { height: 100dvh; }
-  h1 {
-    color: #3a1f22;
-    font-size: clamp(2rem, 7vw, 4rem);
+    padding: 2%;
     text-align: center;
-    max-width: 90vw;
-    padding: 0;
+  }
+  .caption-box h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #fdf6f0;
+    font-size: clamp(1.3rem, 2.56vmin, 7.5rem);
+    line-height: 1.15;
+    margin: 0;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.20);
+    letter-spacing: 0.02em;
   }
 </style>
 </head>
 <body>
-  <h1>Adam loves Erika</h1>
+  <div class="caption-box">
+    <h1>Adam loves Erika</h1>
+  </div>
 </body>
 </html>
