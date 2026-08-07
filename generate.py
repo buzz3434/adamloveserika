@@ -47,16 +47,22 @@ FONT_GROUPS = {
         ("'Dancing Script', cursive", 700),
         ("'Playfair Display', serif", 700),
         ("'Great Vibes', cursive", 400),
+        ("'Parisienne', cursive", 400),
+        ("'Cormorant Garamond', serif", 700),
     ],
     "cool": [
         ("'Poppins', sans-serif", 600),
         ("'Montserrat', sans-serif", 600),
         ("'Cormorant Garamond', serif", 600),
+        ("'Playfair Display', serif", 600),
+        ("'Marcellus', serif", 400),
     ],
     "neutral": [
         ("'Cormorant Garamond', serif", 600),
         ("'Playfair Display', serif", 700),
         ("'Poppins', sans-serif", 500),
+        ("'Dancing Script', cursive", 700),
+        ("'Marcellus', serif", 400),
     ],
 }
 
@@ -64,11 +70,27 @@ GOOGLE_FONTS_IMPORT_URL = (
     "https://fonts.googleapis.com/css2?"
     "family=Dancing+Script:wght@700&"
     "family=Great+Vibes&"
-    "family=Playfair+Display:wght@700&"
+    "family=Parisienne&"
+    "family=Marcellus&"
+    "family=Playfair+Display:wght@600;700&"
     "family=Poppins:wght@500;600&"
     "family=Montserrat:wght@600&"
-    "family=Cormorant+Garamond:wght@600&display=swap"
+    "family=Cormorant+Garamond:wght@600;700&display=swap"
 )
+
+# A rotating set of text colors, each with a light and dark version. The
+# light version is used on dark backgrounds and the dark version on light
+# backgrounds, so contrast/legibility is always preserved -- but which
+# *hue* gets used cycles through this list, so the text isn't always just
+# plain black or white.
+COLOR_PALETTE = [
+    ("#fdf6f0", "#241417"),  # cream / near-black
+    ("#ffd9e6", "#5c1830"),  # blush pink / deep wine
+    ("#ffe9b0", "#5c4108"),  # gold / deep amber
+    ("#e3d9ff", "#2f1a5c"),  # lavender / deep violet
+    ("#d7f0ff", "#0b3a56"),  # sky blue / deep navy
+    ("#e3f0df", "#1f3d17"),  # sage / deep forest
+]
 
 # How far in from each edge (as a fraction of the image) we require the
 # text box to stay. Browsers crop photos differently depending on screen
@@ -93,8 +115,24 @@ SCAN_STEP = 0.04
 
 
 def day_index_today() -> int:
+    """
+    How many days since rotation start. Used to pick photo + font + color.
+
+    Normally this is purely based on today's real date, so the look stays
+    stable all day even if the workflow happens to run more than once.
+    For testing, you can override it by setting the DAY_OFFSET environment
+    variable (the "Run workflow" button lets you type a number in) to
+    preview a different day's combination on demand without waiting.
+    """
     today = datetime.date.today()
-    return (today - ROTATION_START_DATE).days
+    base = (today - ROTATION_START_DATE).days
+    override = os.environ.get("DAY_OFFSET", "").strip()
+    if override:
+        try:
+            return base + int(override)
+        except ValueError:
+            pass
+    return base
 
 
 def list_drive_images():
@@ -173,6 +211,15 @@ def pick_font(mood: str):
     day = day_index_today()
     group = FONT_GROUPS.get(mood, FONT_GROUPS["neutral"])
     return group[day % len(group)]
+
+
+def pick_text_color(brightness: float):
+    """Cycle through COLOR_PALETTE by day, choosing the light or dark
+    version of that day's color depending on what will stay legible
+    against the specific patch of photo behind it."""
+    day = day_index_today()
+    light_hex, dark_hex = COLOR_PALETTE[(day + 3) % len(COLOR_PALETTE)]
+    return dark_hex if brightness > 150 else light_hex
 
 
 # --------------------------- quiet-area detection ---------------------------
@@ -286,10 +333,7 @@ def analyze_photo(path: str):
     r, g, b = pixels.tolist()
 
     brightness = perceived_brightness(r, g, b)
-    if brightness > 150:
-        text_color = "#241417"
-    else:
-        text_color = "#fdf6f0"
+    text_color = pick_text_color(brightness)
 
     mood = classify_mood(r, g, b)
     font_family, font_weight = pick_font(mood)
@@ -298,10 +342,10 @@ def analyze_photo(path: str):
     # in vmin so it scales sensibly across both portrait phones and wide
     # desktop screens. Bigger quiet patch -> bigger text; smaller -> smaller.
     text_len = max(len(MESSAGE), 1)
-    avg_char_width_factor = 0.56  # rough average glyph width for the fonts above
-    width_based_vmin = (width_frac * 100 * 0.82) / (text_len * avg_char_width_factor)
-    height_based_vmin = (height_frac * 100 * 0.70)
-    font_size_vmin = max(2.0, min(width_based_vmin, height_based_vmin, 10.0))
+    avg_char_width_factor = 0.50  # rough average glyph width for the fonts above
+    width_based_vmin = (width_frac * 100 * 0.90) / (text_len * avg_char_width_factor)
+    height_based_vmin = (height_frac * 100 * 0.80)
+    font_size_vmin = max(2.6, min(width_based_vmin, height_based_vmin, 12.0))
 
     return {
         "left_pct": round(left_frac * 100, 2),
@@ -364,7 +408,7 @@ def render_html(photo_path: str, style: dict) -> str:
     font-family: {style['font_family']};
     font-weight: {style['font_weight']};
     color: {style['text_color']};
-    font-size: clamp(1.3rem, {style['font_size_vmin']}vmin, 7.5rem);
+    font-size: clamp(1.6rem, {style['font_size_vmin']}vmin, 9rem);
     line-height: 1.15;
     margin: 0;
     text-shadow: 0 2px 14px rgba(0,0,0,0.20);
